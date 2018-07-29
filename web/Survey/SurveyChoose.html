@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../Util/jquery-3.2.1.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" src="../Util/sweetalert-dev.js"></script>
+    <!-- ip -->
+    <script type="text/javascript" src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
+
+
+    <link rel="stylesheet" type="text/css" href="../Util/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../Util/sweetalert.css"/>
+
+    <style>
+        body {
+            background: RGB(214, 218, 230);
+            height: 1300px;
+        }
+
+        #left {
+            background-color: RGB(69, 81, 123);
+        }
+
+        #personInfo {
+            background-color: RGB(54, 63, 94);
+        }
+
+        #headPortrait {
+            float: left;
+            margin: 10px 10px;
+        }
+
+        #headPortrait img {
+            margin-left: 120%;
+            margin-top: 40%;
+        }
+
+        #control {
+            background-color: RGB(255, 250, 240)
+        }
+    </style>
+
+    <script>
+        var qusName;   //表单名
+        var allID = {};
+
+        $(document).ready(function () {
+            //请求菜单
+            {
+                $.ajax({
+                    type: "post",
+                    url: "../QuestionnaireServlet",
+                    data: {
+                        get: 'queryAllQstnrTitles',
+                    },
+                    dataType: "TEXT",
+                    success: function (data) {
+                        data = JSON.parse(data);
+                        console.log(data);
+                        createMenu(data);
+                    }
+                });
+            }
+
+
+            function createMenu(data) {
+                var content;
+                for(var key in data){
+                    content = "<li role='presentation'><a href='javascript:void(0)' onclick='change(this)' id='" +
+                        data[key] +"'>" + (data[key])+ "</a></li>";
+                    $("#menuUl").prepend(content);
+                }
+            }
+
+            //提交按钮事件
+            $("#form").on('click', '#loginButton', function () {
+                var result = {};
+
+                for(var key in allID ){
+                    var ID = allID[key];
+
+                    var option = $("input[name=" + ID +"]:checked").get(0).id;
+                    var choise = option.charAt(option.length-1);
+                    result[ID] = choise;
+                }
+
+                debugger;
+                console.log(result);
+                console.log(JSON.stringify(result));
+
+                $.ajax({
+                    type: "post",
+                    url: "../QuestionnaireServlet",
+                    data: {
+                        get: 'submitQstnr',
+                        name: qusName.substr(0, qusName.length-1) + "结果",
+                        IP: returnCitySN.cip,
+                        result: JSON.stringify(result)
+                    },
+                    dataType: "TEXT",
+                    success: function (data) {
+                        data = JSON.parse(data);
+                        console.log(data);
+                        var info = data['info'];
+                        if(info == "success"){
+                            swal({
+                                title: "提交成功",
+                                text: "5秒后自动消失",
+                                timer: 5000,
+                                type:"success",
+                                showConfirmButton: true
+                            });
+                        }
+                    }
+                });
+            });
+        })
+
+        //获取表单数据
+        function change(obj) {
+            var $obj = $(obj);
+            qusName = $obj.get(0).id;
+
+            $.ajax({
+                type: "get",
+                url: "../QuestionnaireServlet",
+                data: {
+                    get: 'queryAssignQstnr',
+                    name: qusName
+                },
+                dataType: "TEXT",
+                success: function (data) {
+                    data = JSON.parse(data);
+                    console.log(data);
+
+                    createTable(data);
+                }
+            });
+        }
+
+        //生成表单
+        function createTable(array) {
+            var optionNum;
+            var ID;
+            var describe;
+            var arrayNum = 1;
+
+            var content = "";
+            for(var i=0;i<array.length;i++){
+                var optionContent = "";
+                for(var key in array[i]){
+                    if(key == 'TopicID'){
+                        ID = array[i][key];
+                        allID[i] = ID;
+                    }else if(key == 'TopicDescribe'){
+                        describe = "<div class='form-group'> <label> "+arrayNum +" ." + array[i][key] +"</label> </div>";
+                    }else if(array[i][key]!=""){
+                        optionNum =  key.charAt(key.length-1);
+                        optionContent += "<label > <input type='radio' name='" + ID + "' id='" + ID+optionNum + "'> " +
+                            optionNum + ". " + array[i][key] + "</label>"
+                    }
+                }
+
+                var option = "";
+                option += describe;
+                option += "<div class='radio'> <div class='btn-group' data-toggle='buttons' id='" + ID +"'>";
+                option += optionContent;
+                option += "</div> </div>";
+                content += option;
+
+                arrayNum++;
+            }
+
+            content += "<button type='button' id='loginButton' class='btn btn-default'>提交</button>";
+
+            $("#form").html(content);
+        }
+
+    </script>
+</head>
+
+<body>
+    <div id="left" style="height: 100%; width: 15%; float: left">
+        <div id="personInfo" style="height: 130px; width: 100%">
+            <a id="headPortrait" href="SurveyChoose.html"><img src="../Image/调查.png" width="50px" height=50px""></a>
+        </div>
+
+        <div id="menu" style="height: 600px; width: 100%; padding-top: 35%;">
+            <ul id="menuUl" class="nav nav-pills nav-stacked">
+
+            </ul>
+        </div>
+    </div>
+
+    <div id="right" style="height:100%; width:85%;float:left; ">
+        <div id="control" style="height:130px; width: 100%; padding-top:1%;">
+            <div style="margin-top:2%; margin-left:38%;">
+                <h2>问卷调查系统</h2>
+            </div>
+
+            <button onclick="window.location.href='../Welcome.html'" id="shutdown" type="button" class="btn btn-info" style="margin-left:88%; margin-top:-6.5%;">
+                <img src="../Image/关闭.png" width="35px" height=35px">
+            </button>
+        </div>
+
+        <div id="Table" style="padding-top: 8%; padding-left: 5%; padding-right: 5%;">
+            <form id="form">
+
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>
