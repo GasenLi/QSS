@@ -54,8 +54,8 @@ public class LoginFilter implements Filter {
         if(session == null){
             servletResponse.sendRedirect("/QSS/Admin/AdminLogin.html");
         } else {
-           // 已经登陆,继续此次请求
-           chain.doFilter(request, response);
+            // 已经登陆,继续此次请求
+            chain.doFilter(request, response);
         }
     }
 
